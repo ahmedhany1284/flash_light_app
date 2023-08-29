@@ -9,20 +9,20 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<MyHomePage> {
+class _HomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   bool flash = false;
   IconData icon = Icons.flash_off;
-  String flashing = 'flash off';
+  String flashing = 'OFF';
 
   @override
   void convert(flash) {
     if (flash != true) {
-      flashing = 'flash off';
+      flashing = 'OFF';
       icon = Icons.flash_off;
       _disableTorch(context);
     } else {
       _enableTorch(context);
-      flashing = 'flash on';
+      flashing = 'ON';
       icon = Icons.flash_on;
     }
   }
@@ -52,22 +52,41 @@ class _HomePageState extends State<MyHomePage> {
           Container(
             height: 3.0,
             color: Colors.black,
-            width: 200.0,
+            width:  MediaQuery.of(context).size.width * 0.8,
           ),
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.07,
           ),
           Center(
-            child: IconButton(
-              onPressed: () {
-                setState(() {
-                  flash = !flash;
-                  convert(flash);
-                });
-              },
-              icon: Icon(
-                icon,
-                size: 100.0,
+            child: Container(
+              width:MediaQuery.of(context).size.width * 0.35,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(30.0),
+                boxShadow:const [
+                  BoxShadow(
+                    color: Colors.black,
+                    blurRadius: 5,
+                    spreadRadius: 1,
+                    offset: Offset(0, 3)
+                    ,
+                  ),
+                ],
+              ),
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    flash = !flash;
+                    convert(flash);
+                  });
+                },
+                child: Text(
+                  flashing,
+                  style: TextStyle(
+                    fontSize: 35.0,
+                    color: Colors.black,
+                  ),
+                ),
               ),
             ),
           ),
@@ -76,13 +95,11 @@ class _HomePageState extends State<MyHomePage> {
     );
   }
 
-
-
   Future<void> _enableTorch(BuildContext context) async {
     try {
       await TorchLight.enableTorch();
     } on Exception catch (_) {
-      showToast('Could not disable torch' );
+      showToast('Could not disable torch');
     }
   }
 
@@ -90,11 +107,31 @@ class _HomePageState extends State<MyHomePage> {
     try {
       await TorchLight.disableTorch();
     } on Exception catch (_) {
-      showToast('Could not disable torch' );
+      showToast('Could not disable torch');
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance!.addObserver(this);
+  }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance!.removeObserver(this);
+    super.dispose();
+  }
 
-
+  @override
+  void didChangeAppLifecycleState(state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _disableTorch(context);
+    } else {
+      _enableTorch(context);
+    }
+  }
 }
